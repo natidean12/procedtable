@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Controle Mensal do Salão</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #f8cdda, #f1a7c5);
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+}
+
+.topo {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+select {
+    padding: 8px;
+    font-size: 16px;
+}
+
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+th {
+    background: #8e245c;
+    color: white;
+    border: 3px solid #5e1438;
+}
+
+td {
+    border: 3px solid #c77aa0;
+}
+
+th, td {
+    padding: 8px;
+    text-align: center;
+}
+
+input {
+    width: 100%;
+    border: none;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+input:disabled {
+    background: #f1f3f5;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background: #fff5fa;
+}
+
+#totalMes {
+    margin-top: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: right;
+}
+
+/* iPhone */
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    th, td {
+        padding: 6px;
+        font-size: 14px;
+    }
+
+    input {
+        font-size: 15px;
+    }
+
+    #totalMes {
+        font-size: 20px;
+        text-align: center;
+    }
+}
+
+/* iPad */
+@media (min-width: 768px) {
+    body {
+        padding: 30px;
+    }
+
+    th, td {
+        font-size: 16px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<h1>Controle Mensal do Salão</h1>
+
+<div class="topo">
+    <div>
+        Mês:
+        <select id="mesSelect" onchange="trocarMes()">
+            <option value="0">Janeiro</option>
+            <option value="1">Fevereiro</option>
+            <option value="2">Março</option>
+            <option value="3">Abril</option>
+            <option value="4">Maio</option>
+            <option value="5">Junho</option>
+            <option value="6">Julho</option>
+            <option value="7">Agosto</option>
+            <option value="8">Setembro</option>
+            <option value="9">Outubro</option>
+            <option value="10">Novembro</option>
+            <option value="11">Dezembro</option>
+        </select>
+    </div>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Dia</th>
+                <th>Química</th>
+                <th>Outros</th>
+                <th>35% Química</th>
+                <th>50% Outros</th>
+                <th>Total Sem %</th>
+                <th>Total Com %</th>
+            </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+    </table>
+</div>
+
+<div id="totalMes">Total do Mês: R$ 0,00</div>
+
+<script>
+const tbody = document.getElementById("tbody");
+const totalMesDiv = document.getElementById("totalMes");
+const anoAtual = new Date().getFullYear();
+
+function diasDoMes(mes) {
+    return new Date(anoAtual, mes + 1, 0).getDate();
+}
+
+function chaveMes(mes) {
+    return `salao-${anoAtual}-${mes}`;
+}
+
+function trocarMes() {
+    const mes = parseInt(document.getElementById("mesSelect").value);
+    criarTabelaDoMes(mes);
+    carregarDados(mes);
+}
+
+function criarTabelaDoMes(mes) {
+    tbody.innerHTML = "";
+    const totalDias = diasDoMes(mes);
+
+    for (let dia = 1; dia <= totalDias; dia++) {
+        const data = new Date(anoAtual, mes, dia);
+        if (data.getDay() === 6) continue;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${dia}</td>
+            <td><input type="number" step="0.01" oninput="calcular(this)"></td>
+            <td><input type="number" step="0.01" oninput="calcular(this)"></td>
+            <td><input disabled></td>
+            <td><input disabled></td>
+            <td><input disabled></td>
+            <td><input disabled></td>
+        `;
+        tbody.appendChild(tr);
+    }
+}
+
+function calcular(input) {
+    const row = input.closest("tr");
+    const inputs = row.querySelectorAll("input");
+
+    const quimica = parseFloat(inputs[0].value) || 0;
+    const outros = parseFloat(inputs[1].value) || 0;
+
+    const q35 = quimica * 0.35;
+    const o50 = outros * 0.50;
+
+    inputs[2].value = q35.toFixed(2);
+    inputs[3].value = o50.toFixed(2);
+    inputs[4].value = (quimica + outros).toFixed(2);
+    inputs[5].value = (q35 + o50).toFixed(2);
+
+    salvarDados();
+    calcularTotalMes();
+}
+
+function calcularTotalMes() {
+    let total = 0;
+    document.querySelectorAll("#tbody tr").forEach(row => {
+        const v = parseFloat(row.querySelectorAll("input")[5].value);
+        if (!isNaN(v)) total += v;
+    });
+    totalMesDiv.innerText = `Total do Mês: R$ ${total.toFixed(2)}`;
+}
+
+function salvarDados() {
+    const mes = document.getElementById("mesSelect").value;
+    const dados = [];
+
+    document.querySelectorAll("#tbody tr").forEach(row => {
+        const inputs = row.querySelectorAll("input");
+        dados.push({
+            quimica: inputs[0].value,
+            outros: inputs[1].value
+        });
+    });
+
+    localStorage.setItem(chaveMes(mes), JSON.stringify(dados));
+}
+
+function carregarDados(mes) {
+    const dados = JSON.parse(localStorage.getItem(chaveMes(mes))) || [];
+    document.querySelectorAll("#tbody tr").forEach((row, i) => {
+        if (dados[i]) {
+            row.querySelectorAll("input")[0].value = dados[i].quimica;
+            row.querySelectorAll("input")[1].value = dados[i].outros;
+            calcular(row.querySelectorAll("input")[0]);
+        }
+    });
+}
+
+document.getElementById("mesSelect").value = new Date().getMonth();
+trocarMes();
+</script>
+
+</body>
+</html>
